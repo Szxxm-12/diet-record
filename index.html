@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饮食热量记录</title>
+<style>
+  :root {
+    --bg: #f6f4ee;
+    --surface: #fffefa;
+    --ink: #26322d;
+    --muted: #7d857f;
+    --line: #eae5db;
+    --green: #2f6b57;
+    --danger: #b04a45;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding-bottom: 122px;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    background:
+      radial-gradient(900px 520px at -8% -10%, #e8efe6 0%, rgba(232, 239, 230, 0) 65%),
+      radial-gradient(720px 480px at 108% 0%, #f4e9da 0%, rgba(244, 233, 218, 0) 62%),
+      var(--bg);
+      background-attachment: fixed;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 3px;
+  }
+
+  .page {
+    width: min(980px, 100%);
+    margin: 0 auto;
+    padding: 0 22px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 42px 0 24px;
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 18px;
+    height: 1.5px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(27px, 4vw, 36px);
+    font-weight: 750;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+  }
+
+  .subtitle {
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .reset-btn {
+    flex: 0 0 auto;
+    padding: 9px 15px;
+    border: 1px solid #dad4c8;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.68);
+    color: #5e665f;
+    font-size: 12.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .reset-btn:hover:not(:disabled) {
+    border-color: #c9c1b3;
+    background: #fff;
+    color: var(--danger);
+  }
+
+  .reset-btn:disabled {
+    opacity: 0.42;
+    cursor: default;
+  }
+
+  .meals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 18px;
+  }
+
+  .meal-card {
+    min-width: 0;
+    padding: 20px 20px 16px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: linear-gradient(180deg, var(--accent-soft) 0, var(--surface) 132px);
+    box-shadow: 0 10px 30px rgba(53, 58, 48, 0.045);
+  }
+
+  .meal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .meal-name {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .meal-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .meal-name h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .meal-total {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .meal-total span {
+    font-size: 11px;
+  }
+
+  .meal-total strong {
+    color: var(--ink);
+    font-size: 17px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .meal-total em {
+    font-size: 10.5px;
+    font-style: normal;
+  }
+
+  .entry-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1.28fr) minmax(0, 0.9fr) 40px;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .entry-form input {
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: #f4f1e9;
+    color: var(--ink);
+    font-size: 13.5px;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .entry-form input::placeholder {
+    color: #a5a99f;
+  }
+
+  .entry-form input:hover {
+    background: #f0ede4;
+  }
+
+  .entry-form input:focus {
+    border-color: var(--accent);
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  .add-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 11px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(47, 60, 52, 0.12);
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+
+  .add-btn:hover {
+    filter: brightness(0.93);
+  }
+
+  .add-btn:active {
+    transform: scale(0.96);
+  }
+
+  .add-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .hint {
+    min-height: 16px;
+    margin: 8px 2px 4px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+    transition: color 0.2s ease;
+  }
+
+  .hint.is-error {
+    color: var(--danger);
+  }
+
+  .item-list {
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .item-list:empty {
+    display: none;
+  }
+
+  .food-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 24px;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .item-name {
+    overflow: hidden;
+    font-size: 13.5px;
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-meta {
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-kcal {
+    color: var(--ink);
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .item-kcal small {
+    margin-left: 2px;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .remove-btn {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #b0b3aa;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .remove-btn:hover {
+    background: #f8edeb;
+    color: var(--danger);
+  }
+
+  .remove-btn svg {
+    width: 13px;
+    height: 13px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .empty {
+    margin: 14px 0 2px;
+    padding: 14px 0 4px;
+    border-top: 1px dashed var(--line);
+    color: #a5a99f;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .empty[hidden] {
+    display: none;
+  }
+
+  .manual-dialog {
+    width: min(420px, calc(100% - 32px));
+    padding: 0;
+    border: 0;
+    border-radius: 22px;
+    background: transparent;
+    color: var(--ink);
+    box-shadow: 0 24px 70px rgba(28, 43, 36, 0.28);
+  }
+
+  .manual-dialog::backdrop {
+    background: rgba(28, 38, 33, 0.46);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+
+  .manual-card {
+    max-height: calc(100vh - 32px);
+    padding: 24px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    border-radius: 22px;
+    background: var(--surface);
+    animation: dialog-in 0.22s ease;
+  }
+
+  @keyframes dialog-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dialog-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .dialog-eyebrow {
+    margin: 0 0 7px;
+    color: var(--green);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+
+  .dialog-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+  }
+
+  .dialog-close {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 9px;
+    background: #f4f1e9;
+    color: #878e87;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .dialog-close:hover {
+    background: #eeeae0;
+    color: var(--ink);
+  }
+
+  .dialog-close svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+  }
+
+  .dialog-desc {
+    margin: 13px 0 19px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .manual-field-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #4e5a53;
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  .manual-input-wrap {
+    display: flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 15px;
+    border: 1px solid #ded8cd;
+    border-radius: 13px;
+    background: #f7f4ed;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .manual-input-wrap:focus-within {
+    border-color: var(--green);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(47, 107, 87, 0.1);
+  }
+
+  .manual-input-wrap input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .manual-input-wrap input::-webkit-outer-spin-button,
+  .manual-input-wrap input::-webkit-inner-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
+  }
+
+  .manual-input-wrap input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  .manual-unit {
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .dialog-error {
+    margin: 8px 0 0;
+    color: var(--danger);
+    font-size: 12px;
+  }
+
+  .dialog-error[hidden] {
+    display: none;
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .btn-cancel,
+  .btn-confirm {
+    height: 42px;
+    padding: 0 18px;
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  .btn-cancel {
+    border: 1px solid #ded8cd;
+    background: #fff;
+    color: #5f675f;
+  }
+
+  .btn-cancel:hover {
+    border-color: #cbc4b7;
+    background: #faf8f3;
+  }
+
+  .btn-confirm {
+    border: 0;
+    background: var(--green);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(47, 107, 87, 0.18);
+  }
+
+  .btn-confirm:hover {
+    background: #285b49;
+  }
+
+  .total-bar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: min(936px, calc(100% - 44px));
+    padding: 14px 18px 14px 22px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #2b5f4d 0%, #214c3e 100%);
+    color: #fff;
+    box-shadow: 0 16px 36px rgba(25, 49, 40, 0.24), inset 0 1px rgba(255, 255, 255, 0.1);
+    transform: translateX(-50%);
+  }
+
+  .total-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .total-label {
+    font-size: 13px;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+  }
+
+  .save-note {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255, 255, 255, 0.64);
+    font-size: 10.5px;
+  }
+
+  .save-note::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #84c9a8;
+  }
+
+  .total-value {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .total-value strong {
+    font-size: 30px;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .total-value span {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 11px;
+  }
+
+  .total-value.is-bump {
+    animation: bump 0.35s ease;
+  }
+
+  @keyframes bump {
+    0%, 100% { transform: scale(1); }
+    40% { transform: scale(1.06); }
+  }
+
+  @media (max-width: 760px) {
+    body {
+      padding-bottom: 112px;
+    }
+
+    .page {
+      padding: 0 16px;
+    }
+
+    .topbar {
+      align-items: flex-start;
+      padding: 28px 0 18px;
+    }
+
+    .subtitle {
+      max-width: 300px;
+    }
+
+    .meals {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .meal-card {
+      padding: 18px;
+    }
+
+    .total-bar {
+      bottom: calc(10px + env(safe-area-inset-bottom));
+      width: calc(100% - 28px);
+      padding: 12px 16px 12px 18px;
+    }
+
+    .total-value strong {
+      font-size: 26px;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .page {
+      padding: 0 14px;
+    }
+
+    .topbar {
+      gap: 12px;
+      padding-top: 24px;
+    }
+
+    h1 {
+      font-size: 25px;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      font-size: 12.5px;
+    }
+
+    .reset-btn {
+      padding: 8px 12px;
+      font-size: 11.5px;
+    }
+
+    .meal-card {
+      padding: 16px;
+      border-radius: 18px;
+    }
+
+    .entry-form {
+      grid-template-columns: minmax(0, 1fr) 92px 38px;
+      gap: 6px;
+    }
+
+    .entry-form input {
+      height: 38px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    .add-btn {
+      width: 38px;
+      height: 38px;
+    }
+
+    .total-bar {
+      width: calc(100% - 20px);
+      bottom: calc(8px + env(safe-area-inset-bottom));
+      border-radius: 16px;
+      padding: 11px 14px 11px 16px;
+    }
+
+    .total-label {
+      font-size: 12px;
+    }
+
+    .save-note {
+      font-size: 10px;
+    }
+
+    .total-value strong {
+      font-size: 24px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">每日饮食 · 热量估算</p>
+        <h1>饮食热量记录</h1>
+        <p class="subtitle">选择食物，输入分量，自动算出每一餐的热量。</p>
+      </div>
+      <button class="reset-btn" id="resetBtn" type="button" disabled>清空全部</button>
+    </header>
+
+    <main class="meals" id="meals"></main>
+  </div>
+
+  <footer class="total-bar" aria-live="polite">
+    <div class="total-copy">
+      <span class="total-label">全天总计</span>
+      <span class="save-note">数据自动保存在本机</span>
+    </div>
+    <div class="total-value">
+      <strong id="dayTotal">0</strong>
+      <span>千卡</span>
+    </div>
+  </footer>
+
+  <dialog class="manual-dialog" id="manualDialog" aria-labelledby="manualTitle">
+    <form class="manual-card" id="manualForm" novalidate>
+      <div class="dialog-top">
+        <div>
+          <p class="dialog-eyebrow">手动热量</p>
+          <h2 class="dialog-title" id="manualTitle">这份食物不在热量表</h2>
+        </div>
+        <button class="dialog-close" id="manualClose" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        </button>
+      </div>
+      <p class="dialog-desc" id="manualDesc"></p>
+      <label class="manual-field-label" for="manualKcal">这一份的热量</label>
+      <div class="manual-input-wrap">
+        <input id="manualKcal" type="number" inputmode="decimal" min="1" step="any"
+          placeholder="0" aria-describedby="manualError">
+        <span class="manual-unit">千卡</span>
+      </div>
+      <p class="dialog-error" id="manualError" hidden>请输入大于 0 的热量数值</p>
+      <div class="dialog-actions">
+        <button class="btn-cancel" id="manualCancel" type="button">取消</button>
+        <button class="btn-confirm" id="manualConfirm" type="submit">添加并计入</button>
+      </div>
+    </form>
+  </dialog>
+
+  <datalist id="foodOptions"></datalist>
+
+<script>
+(function () {
+  "use strict";
+
+  const STORAGE_KEY = "meal-calorie-log-v1";
+
+  const SECTIONS = [
+    { key: "breakfast", label: "早餐", accent: "#cd8933", soft: "#fdf4e6" },
+    { key: "lunch", label: "午餐", accent: "#3c7a61", soft: "#edf5f0" },
+    { key: "dinner", label: "晚餐", accent: "#526f9d", soft: "#eef2f8" },
+    { key: "snack", label: "加餐", accent: "#b26878", soft: "#faf0f2" }
+  ];
+
+  // 热量为每 100g（液体为每 100ml）的估算值；serving 为一份的克数。
+  const FOODS = [
+    { name: "米饭", kcal: 116, serving: 150, unit: "碗", aliases: ["白米饭", "大米饭"] },
+    { name: "糙米饭", kcal: 111, serving: 150, unit: "碗", aliases: ["糙米"] },
+    { name: "面条", kcal: 110, serving: 200, unit: "碗", aliases: ["熟面条", "面"] },
+    { name: "馒头", kcal: 223, serving: 100, unit: "个", aliases: ["白馒头"] },
+    { name: "全麦面包", kcal: 246, serving: 35, unit: "片", aliases: ["全麦吐司"] },
+    { name: "白面包", kcal: 264, serving: 30, unit: "片", aliases: ["面包", "吐司"] },
+    { name: "鸡蛋", kcal: 143, serving: 50, unit: "个", aliases: ["蛋", "水煮蛋", "煮鸡蛋"] },
+    { name: "鸡胸肉", kcal: 133, serving: 100, unit: "份", aliases: ["鸡胸"] },
+    { name: "鸡腿肉", kcal: 181, serving: 100, unit: "份", aliases: ["鸡腿"] },
+    { name: "猪瘦肉", kcal: 143, serving: 100, unit: "份", aliases: ["猪肉", "瘦猪肉"] },
+    { name: "牛肉", kcal: 125, serving: 100, unit: "份", aliases: ["瘦牛肉"] },
+    { name: "鱼肉", kcal: 113, serving: 100, unit: "份", aliases: ["鱼", "草鱼", "鲈鱼"] },
+    { name: "虾", kcal: 93, serving: 100, unit: "份", aliases: ["虾仁", "基围虾"] },
+    { name: "牛奶", kcal: 54, serving: 250, unit: "杯", liquid: true, aliases: ["纯牛奶", "全脂牛奶"] },
+    { name: "酸奶", kcal: 72, serving: 200, unit: "杯", aliases: ["酸牛奶"] },
+    { name: "豆浆", kcal: 31, serving: 250, unit: "杯", liquid: true, aliases: ["无糖豆浆"] },
+    { name: "豆腐", kcal: 82, serving: 100, unit: "份", aliases: ["北豆腐", "南豆腐"] },
+    { name: "燕麦片", kcal: 377, serving: 40, unit: "份", aliases: ["燕麦", "麦片"] },
+    { name: "苹果", kcal: 53, serving: 200, unit: "个", aliases: ["红富士"] },
+    { name: "香蕉", kcal: 93, serving: 120, unit: "根", aliases: [] },
+    { name: "橙子", kcal: 48, serving: 150, unit: "个", aliases: ["橙"] },
+    { name: "西瓜", kcal: 31, serving: 300, unit: "块", aliases: [] },
+    { name: "葡萄", kcal: 45, serving: 100, unit: "份", aliases: ["提子"] },
+    { name: "草莓", kcal: 32, serving: 100, unit: "份", aliases: [] },
+    { name: "土豆", kcal: 81, serving: 150, unit: "个", aliases: ["马铃薯"] },
+    { name: "红薯", kcal: 106, serving: 150, unit: "个", aliases: ["地瓜", "甘薯"] },
+    { name: "玉米", kcal: 112, serving: 150, unit: "根", aliases: ["玉米棒"] },
+    { name: "西兰花", kcal: 36, serving: 100, unit: "份", aliases: ["绿菜花"] },
+    { name: "青菜", kcal: 20, serving: 100, unit: "份", aliases: ["小白菜"] },
+    { name: "番茄", kcal: 20, serving: 150, unit: "个", aliases: ["西红柿"] },
+    { name: "肉包子", kcal: 227, serving: 100, unit: "个", aliases: ["包子", "肉包"] },
+    { name: "饺子", kcal: 240, serving: 20, unit: "个", aliases: ["水饺"] },
+    { name: "油条", kcal: 388, serving: 80, unit: "根", aliases: [] },
+    { name: "米粥", kcal: 46, serving: 250, unit: "碗", aliases: ["粥", "白粥", "稀饭"] },
+    { name: "坚果", kcal: 600, serving: 15, unit: "把", aliases: ["混合坚果"] },
+    { name: "薯片", kcal: 536, serving: 30, unit: "包", aliases: ["土豆片"] },
+    { name: "可乐", kcal: 43, serving: 330, unit: "罐", liquid: true, aliases: ["可口可乐", "百事可乐"] },
+    { name: "巧克力", kcal: 589, serving: 20, unit: "块", aliases: ["黑巧克力"] },
+    { name: "汉堡", kcal: 250, serving: 200, unit: "个", aliases: ["汉堡包"] },
+    { name: "花生", kcal: 574, serving: 15, unit: "把", aliases: ["花生米"] }
+  ];
+
+  const englishNumbers = {
+    "零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4,
+    "五": 5, "六": 6, "七": 7, "八": 8, "九": 9
+  };
+
+  const portionUnits = ["碗", "杯", "个", "份", "根", "片", "块", "包", "罐", "把", "串", "条", "颗", "瓶", "盒", "袋"];
+
+  let state = loadState();
+  let pendingEntry = null;
+
+  const manualDialog = document.getElementById("manualDialog");
+  const manualForm = document.getElementById("manualForm");
+  const manualKcal = document.getElementById("manualKcal");
+  const manualDesc = document.getElementById("manualDesc");
+  const manualError = document.getElementById("manualError");
+  const manualConfirm = document.getElementById("manualConfirm");
+
+  function createId() {
+    return Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function emptyState() {
+    const result = {};
+    SECTIONS.forEach(function (section) {
+      result[section.key] = [];
+    });
+    return result;
+  }
+
+  function loadState() {
+    const clean = emptyState();
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return clean;
+
+      const saved = JSON.parse(raw);
+      SECTIONS.forEach(function (section) {
+        if (!Array.isArray(saved[section.key])) return;
+
+        clean[section.key] = saved[section.key]
+          .filter(function (item) {
+            return item &&
+              typeof item.name === "string" &&
+              typeof item.meta === "string" &&
+              Number.isFinite(Number(item.kcal));
+          })
+          .map(function (item) {
+            return {
+              id: typeof item.id === "string" ? item.id : createId(),
+              name: item.name,
+              meta: item.meta,
+              kcal: Math.max(0, Math.round(Number(item.kcal)))
+            };
+          })
+          .slice(0, 500);
+      });
+    } catch (error) {
+      return emptyState();
+    }
+
+    return clean;
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      // 浏览器禁用本地存储时，页面仍可在当前会话内使用。
+    }
+  }
+
+  function buildCards() {
+    const meals = document.getElementById("meals");
+
+    meals.innerHTML = SECTIONS.map(function (section) {
+      return `
+        <section class="meal-card" data-meal="${section.key}"
+          style="--accent:${section.accent};--accent-soft:${section.soft}">
+          <div class="meal-head">
+            <div class="meal-name">
+              <span class="meal-dot"></span>
+              <h2>${section.label}</h2>
+            </div>
+            <div class="meal-total">
+              <span>小计</span>
+              <strong data-subtotal>0</strong>
+              <em>千卡</em>
+            </div>
+          </div>
+          <form class="entry-form" novalidate>
+            <input class="food-input" type="text" list="foodOptions"
+              placeholder="食物，如米饭" aria-label="${section.label}食物名称"
+              autocomplete="off" spellcheck="false">
+            <input class="amount-input" type="text"
+              placeholder="如 150g" aria-label="${section.label}分量"
+              autocomplete="off">
+            <button class="add-btn" type="submit" aria-label="添加到${section.label}">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+            </button>
+          </form>
+          <p class="hint" data-hint>可输入克数，或「1碗」「1个」</p>
+          <ul class="item-list" data-list aria-label="${section.label}记录"></ul>
+          <p class="empty" data-empty>还没有记录</p>
+        </section>
+      `;
+    }).join("");
+  }
+
+  function fillFoodOptions() {
+    const list = document.getElementById("foodOptions");
+    const fragment = document.createDocumentFragment();
+
+    FOODS.forEach(function (food) {
+      const option = document.createElement("option");
+      option.value = food.name;
+      fragment.appendChild(option);
+    });
+
+    list.appendChild(fragment);
+  }
+
+  function normalize(value) {
+    return String(value || "")
+      .trim()
+      .replace(/[\s·（）()]/g, "")
+      .toLowerCase();
+  }
+
+  function foodNames(food) {
+    return [food.name].concat(food.aliases || []);
+  }
+
+  function uniqueFoods(list) {
+    const seen = new Set();
+    return list.filter(function (food) {
+      if (seen.has(food.name)) return false;
+      seen.add(food.name);
+      return true;
+    });
+  }
+
+  function resolveFood(raw) {
+    const query = normalize(raw);
+    if (!query) return null;
+
+    const exact = FOODS.find(function (food) {
+      return foodNames(food).some(function (name) {
+        return normalize(name) === query;
+      });
+    });
+    if (exact) return exact;
+
+    const startsWith = uniqueFoods(FOODS.filter(function (food) {
+      return foodNames(food).some(function (name) {
+        return normalize(name).indexOf(query) === 0;
+      });
+    }));
+    if (startsWith.length === 1) return startsWith[0];
+
+    const contains = uniqueFoods(FOODS.filter(function (food) {
+      return foodNames(food).some(function (name) {
+        return normalize(name).indexOf(query) !== -1;
+      });
+    }));
+    if (contains.length === 1) return contains[0];
+
+    return null;
+  }
+
+  function parseNumeric(value) {
+    if (value === "半") return 0.5;
+    if (value === "两") return 2;
+
+    if (/^[0-9]/.test(value)) {
+      return parseFloat(value.replace("．", "."));
+    }
+
+    if (value.indexOf("十") !== -1) {
+      const parts = value.split("十");
+      const tens = parts[0] ? englishNumbers[parts[0]] : 1;
+      const ones = parts[1] ? englishNumbers[parts[1]] : 0;
+      if (tens == null || ones == null) return NaN;
+      return tens * 10 + ones;
+    }
+
+    const chars = Array.from(value);
+    if (chars.length === 1) {
+      const number = englishNumbers[chars[0]];
+      return number == null ? NaN : number;
+    }
+
+    return NaN;
+  }
+
+  function formatNumber(value) {
+    return String(Number(value.toFixed(1)));
+  }
+
+  function parseAmount(text, food) {
+    const compact = text.trim().replace(/\s+/g, "");
+    if (!compact) return null;
+
+    const match = compact.match(
+      /^(半|[0-9]+(?:[.．][0-9]+)?|两|[一二三四五六七八九十]+)(克|公克|毫升|g|ml|碗|杯|个|份|根|片|块|包|罐|把|串|条|颗|瓶|盒|袋)?$/i
+    );
+    if (!match) return null;
+
+    const quantity = parseNumeric(match[1]);
+    if (!Number.isFinite(quantity) || quantity <= 0) return null;
+
+    const rawUnit = match[2] ? match[2].toLowerCase() : "";
+    const isWeight = !rawUnit || rawUnit === "g" || rawUnit === "克" ||
+      rawUnit === "公克" || rawUnit === "ml" || rawUnit === "毫升";
+    const measure = food.liquid ? "ml" : "g";
+    let grams;
+    let meta;
+
+    if (isWeight) {
+      grams = quantity;
+      meta = rawUnit ? compact : formatNumber(quantity) + measure;
+    } else {
+      grams = quantity * food.serving;
+      meta = compact + " · 约" + formatNumber(grams) + measure;
+    }
+
+    const kcal = Math.round(food.kcal * grams / 100);
+
+    return {
+      grams: Math.round(grams * 10) / 10,
+      meta: meta,
+      kcal: kcal
+    };
+  }
+
+  function formatKcal(value) {
+    return Math.round(value).toLocaleString("zh-CN");
+  }
+
+  function createItemRow(key, item) {
+    const row = document.createElement("li");
+    row.className = "food-item";
+
+    const info = document.createElement("div");
+    info.className = "item-info";
+
+    const name = document.createElement("span");
+    name.className = "item-name";
+    name.textContent = item.name;
+
+    const meta = document.createElement("span");
+    meta.className = "item-meta";
+    meta.textContent = item.meta;
+
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    const energy = document.createElement("span");
+    energy.className = "item-kcal";
+
+    const energyNumber = document.createElement("strong");
+    energyNumber.textContent = formatKcal(item.kcal);
+
+    const energyUnit = document.createElement("small");
+    energyUnit.textContent = "千卡";
+
+    energy.appendChild(energyNumber);
+    energy.appendChild(energyUnit);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "remove-btn";
+    remove.dataset.id = item.id;
+    remove.setAttribute("aria-label", "删除 " + item.name);
+    remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
+
+    row.appendChild(info);
+    row.appendChild(energy);
+    row.appendChild(remove);
+
+    return row;
+  }
+
+  function renderMeal(key) {
+    const card = document.querySelector('[data-meal="' + key + '"]');
+    if (!card) return;
+
+    const items = state[key];
+    const list = card.querySelector("[data-list]");
+    const empty = card.querySelector("[data-empty]");
+    const subtotal = items.reduce(function (sum, item) {
+      return sum + item.kcal;
+    }, 0);
+
+    card.querySelector("[data-subtotal]").textContent = formatKcal(subtotal);
+    list.replaceChildren();
+
+    items.forEach(function (item) {
+      list.appendChild(createItemRow(key, item));
+    });
+
+    empty.hidden = items.length > 0;
+  }
+
+  function renderSummary(animate) {
+    const total = SECTIONS.reduce(function (sum, section) {
+      return sum + state[section.key].reduce(function (mealSum, item) {
+        return mealSum + item.kcal;
+      }, 0);
+    }, 0);
+
+    document.getElementById("dayTotal").textContent = formatKcal(total);
+    document.getElementById("resetBtn").disabled = total === 0;
+
+    if (animate) {
+      const wrapper = document.querySelector(".total-value");
+      wrapper.classList.remove("is-bump");
+      void wrapper.offsetWidth;
+      wrapper.classList.add("is-bump");
+    }
+  }
+
+  function renderAll(animate) {
+    SECTIONS.forEach(function (section) {
+      renderMeal(section.key);
+    });
+    renderSummary(animate);
+  }
+
+  function setHint(card, text, isError) {
+    const hint = card.querySelector("[data-hint]");
+    hint.textContent = text;
+    hint.classList.toggle("is-error", Boolean(isError));
+  }
+
+  function defaultHint(card) {
+    const amountInput = card.querySelector(".amount-input");
+    amountInput.placeholder = "如 150g";
+    setHint(card, "可输入克数，或「1碗」「1个」", false);
+  }
+
+  function updateFoodHint(card) {
+    const foodInput = card.querySelector(".food-input");
+    const amountInput = card.querySelector(".amount-input");
+    const food = resolveFood(foodInput.value);
+
+    if (!foodInput.value.trim()) {
+      defaultHint(card);
+      return;
+    }
+
+    if (!food) {
+      amountInput.placeholder = "如 150g";
+      setHint(card, "可输入克数，或「1碗」「1个」", false);
+      return;
+    }
+
+    const measure = food.liquid ? "ml" : "g";
+    amountInput.placeholder = "如 1" + food.unit;
+    setHint(
+      card,
+      food.kcal + " 千卡 / 100" + measure + " · 1" + food.unit + " ≈ " +
+        food.serving + measure,
+      false
+    );
+  }
+
+  function openManualDialog(entry) {
+    pendingEntry = entry;
+    const section = SECTIONS.find(function (item) {
+      return item.key === entry.key;
+    });
+
+    manualDesc.textContent = "「" + entry.name + "」不在内置热量表中，请填写「" +
+      entry.amount + "」大约多少千卡。";
+    manualConfirm.textContent = "添加到" + (section ? section.label : "记录");
+    manualKcal.value = "";
+    manualError.hidden = true;
+    manualKcal.removeAttribute("aria-invalid");
+
+    if (!manualDialog.open) {
+      manualDialog.showModal();
+    }
+
+    window.requestAnimationFrame(function () {
+      manualKcal.focus();
+    });
+  }
+
+  function handleAdd(event, key) {
+    event.preventDefault();
+
+    const card = event.currentTarget.closest(".meal-card");
+    const foodInput = card.querySelector(".food-input");
+    const amountInput = card.querySelector(".amount-input");
+    const rawFood = foodInput.value.trim();
+    const rawAmount = amountInput.value.trim();
+
+    if (!rawFood) {
+      setHint(card, "请先输入食物名称", true);
+      foodInput.focus();
+      return;
+    }
+
+    if (!rawAmount) {
+      setHint(card, "请输入分量，如 150g 或 1碗", true);
+      amountInput.focus();
+      return;
+    }
+
+    const food = resolveFood(rawFood);
+    if (!food) {
+      setHint(card, "「" + rawFood + "」未收录，请手动填写这一份的热量", false);
+      openManualDialog({
+        key: key,
+        card: card,
+        name: rawFood,
+        amount: rawAmount
+      });
+      return;
+    }
+
+    const parsed = parseAmount(rawAmount, food);
+    if (!parsed) {
+      setHint(card, "分量格式不正确，试试「150g」「1碗」或「1个」", true);
+      amountInput.select();
+      return;
+    }
+
+    state[key].push({
+      id: createId(),
+      name: food.name,
+      meta: parsed.meta,
+      kcal: parsed.kcal
+    });
+
+    saveState();
+    renderMeal(key);
+    renderSummary(true);
+
+    foodInput.value = "";
+    amountInput.value = "";
+    defaultHint(card);
+    foodInput.focus();
+  }
+
+  function handleDelete(event, key) {
+    const remove = event.target.closest(".remove-btn");
+    if (!remove) return;
+
+    state[key] = state[key].filter(function (item) {
+      return item.id !== remove.dataset.id;
+    });
+
+    saveState();
+    renderMeal(key);
+    renderSummary(false);
+  }
+
+  function init() {
+    buildCards();
+    fillFoodOptions();
+
+    SECTIONS.forEach(function (section) {
+      const card = document.querySelector('[data-meal="' + section.key + '"]');
+      const form = card.querySelector(".entry-form");
+      const foodInput = card.querySelector(".food-input");
+      const list = card.querySelector("[data-list]");
+
+      form.addEventListener("submit", function (event) {
+        handleAdd(event, section.key);
+      });
+
+      foodInput.addEventListener("input", function () {
+        updateFoodHint(card);
+      });
+
+      list.addEventListener("click", function (event) {
+        handleDelete(event, section.key);
+      });
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", function () {
+      const total = SECTIONS.reduce(function (sum, section) {
+        return sum + state[section.key].length;
+      }, 0);
+      if (!total) return;
+
+      if (!window.confirm("确定要清空早餐、午餐、晚餐和加餐的全部记录吗？")) {
+        return;
+      }
+
+      state = emptyState();
+      saveState();
+      renderAll(false);
+    });
+
+    manualForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!pendingEntry) return;
+
+      const kcal = Number(manualKcal.value);
+      if (!Number.isFinite(kcal) || kcal <= 0) {
+        manualError.hidden = false;
+        manualKcal.setAttribute("aria-invalid", "true");
+        manualKcal.focus();
+        return;
+      }
+
+      const entry = pendingEntry;
+      const card = entry.card;
+
+      state[entry.key].push({
+        id: createId(),
+        name: entry.name,
+        meta: entry.amount,
+        kcal: Math.max(1, Math.round(kcal))
+      });
+
+      saveState();
+      renderMeal(entry.key);
+      renderSummary(true);
+      manualDialog.close();
+
+      const foodInput = card.querySelector(".food-input");
+      card.querySelector(".amount-input").value = "";
+      foodInput.value = "";
+      defaultHint(card);
+      foodInput.focus();
+    });
+
+    manualKcal.addEventListener("input", function () {
+      manualError.hidden = true;
+      manualKcal.removeAttribute("aria-invalid");
+    });
+
+    manualDialog.addEventListener("close", function () {
+      pendingEntry = null;
+      manualError.hidden = true;
+      manualKcal.value = "";
+      manualKcal.removeAttribute("aria-invalid");
+    });
+
+    manualDialog.addEventListener("click", function (event) {
+      if (event.target === manualDialog) {
+        manualDialog.close();
+      }
+    });
+
+    document.getElementById("manualClose").addEventListener("click", function () {
+      manualDialog.close();
+    });
+
+    document.getElementById("manualCancel").addEventListener("click", function () {
+      manualDialog.close();
+    });
+
+    renderAll(false);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
